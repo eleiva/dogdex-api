@@ -1,23 +1,19 @@
-use std::env;
-
-use actix_files::Files;
-use actix_web::{
-    web::{self, Data},
-    App, Error, HttpResponse, HttpServer,
-};
-use diesel::{
-    r2d2::{self, ConnectionManager},
-    RunQueryDsl, SqliteConnection,
-};
-use dogdex_api::{errors::UserError, models::Dog};
-use dotenv::dotenv;
-use handlebars::{DirectorySourceOptions, Handlebars};
 mod errors;
 mod models;
 mod schema;
 
+use actix_files::Files;
+use actix_web::{web, App, Error, HttpResponse, HttpServer};
 use diesel::prelude::*;
+use diesel::{
+    r2d2::{self, ConnectionManager},
+    RunQueryDsl, SqliteConnection,
+};
+use dogdex_api::{init, AppSettings};
+use errors::UserError;
+use handlebars::Handlebars;
 use log::error;
+use models::Dog;
 use schema::dogs::dsl::*;
 
 async fn index(hb: web::Data<Handlebars<'_>>) -> HttpResponse {
@@ -59,42 +55,4 @@ async fn main() -> std::io::Result<()> {
     .bind("127.0.0.1:8080")?
     .run()
     .await
-}
-
-struct AppSettings<'a> {
-    handlebars: Data<Handlebars<'a>>,
-    pool: r2d2::Pool<ConnectionManager<SqliteConnection>>,
-}
-
-fn init() -> AppSettings<'static> {
-    dotenv().ok();
-
-    let mut handlebars: Handlebars = Handlebars::new();
-
-    handlebars
-        .register_templates_directory(
-            "./static",
-            DirectorySourceOptions {
-                tpl_extension: ".html".to_owned(),
-                hidden: false,
-                temporary: false,
-            },
-        )
-        .unwrap();
-
-    let database_url: String = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-
-    let manager: ConnectionManager<SqliteConnection> =
-        ConnectionManager::<SqliteConnection>::new(&database_url);
-
-    let pool: r2d2::Pool<ConnectionManager<SqliteConnection>> = r2d2::Pool::builder()
-        .build(manager)
-        .expect("Failed to create DB connection pool.");
-
-    let app_settings: AppSettings = AppSettings {
-        handlebars: web::Data::new(handlebars),
-        pool: pool,
-    };
-
-    app_settings
 }
