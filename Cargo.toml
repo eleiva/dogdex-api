@@ -6,7 +6,14 @@ edition = "2021"
 [dependencies]
 actix = "0.13.5"
 actix-files = "0.6.6"
-diesel = "2.2.1"
+actix-web = "4.7.0"
+diesel = { version = "2.2.1", features = ["sqlite", "r2d2"] }
+dotenv = "0.15.0"
+dotenvy = "0.15"
+handlebars = { version = "5", features = ["dir_source"] }
 r2d2 = "0.8.10"
-serde = "1.0.203"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.117"
+derive_more = "0.99.17"
+env_logger = "0.11.2"
+log = "0.4.20"
