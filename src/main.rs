@@ -1,4 +1,4 @@
-use std::{env, error};
+use std::env;
 
 use actix_files::Files;
 use actix_web::{
@@ -12,41 +12,22 @@ use diesel::{
 use dogdex_api::{errors::UserError, models::Dog};
 use dotenv::dotenv;
 use handlebars::{DirectorySourceOptions, Handlebars};
+mod errors;
 mod models;
 mod schema;
-mod errors;
 
-use schema::dogs::dsl::*;
 use diesel::prelude::*;
-use log::{error, info, warn};
-
-
+use log::error;
+use schema::dogs::dsl::*;
 
 async fn index(hb: web::Data<Handlebars<'_>>) -> HttpResponse {
     let body: String = hb.render("landing", &{}).unwrap();
-
     HttpResponse::Ok().body(body)
 }
 
-// async fn get_dogs(
-//     pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
-// ) -> Result<HttpResponse, Error> {
-
-//     let dogs_data    = web::block(move || {
-//         // Usa la conexión obtenida
-//         dogs.limit(100).load::<Dog>(&mut pool.get().unwrap()).map_err(|e| e.to_string())
-//     })
-//     .await
-//     .map_err(|_| HttpResponse::InternalServerError().finish());
-
-//     match dogs_data {
-//         Ok(dogs) => Ok(HttpResponse::Ok().json(dogs)),
-//         Err(_) => Ok(HttpResponse::InternalServerError().finish()),  // Manejo de errores de Diesel
-//     }
-// }
-
-async fn get_dogs(pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>) -> Result<HttpResponse, Error> {
-    let mut connection = pool.get().expect("Can't get db connection from pool");
+async fn get_dogs(
+    pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
+) -> Result<HttpResponse, Error> {
     let dogs_data = web::block(move || dogs.limit(100).load::<Dog>(&mut pool.get().unwrap()))
         .await
         .map_err(|_| {
@@ -57,6 +38,7 @@ async fn get_dogs(pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>
             error!("Failed to get DB connection from pool");
             UserError::DBPoolGetError
         })?;
+
     Ok(HttpResponse::Ok().json(dogs_data))
 }
 
