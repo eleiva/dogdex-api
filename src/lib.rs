@@ -11,13 +11,14 @@ use dotenv::dotenv;
 use handlebars::{DirectorySourceOptions, Handlebars};
 use std::env;
 
+pub type DBPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+
 pub struct AppSettings<'a> {
     pub handlebars: Data<Handlebars<'a>>,
-    pub pool: r2d2::Pool<ConnectionManager<SqliteConnection>>,
+    pub pool: DBPool,
 }
 
 pub fn init() -> AppSettings<'static> {
-    dotenv().ok();
 
     let mut handlebars: Handlebars = Handlebars::new();
 
@@ -32,19 +33,30 @@ pub fn init() -> AppSettings<'static> {
         )
         .unwrap();
 
-    let database_url: String = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-
-    let manager: ConnectionManager<SqliteConnection> =
-        ConnectionManager::<SqliteConnection>::new(&database_url);
-
-    let pool: r2d2::Pool<ConnectionManager<SqliteConnection>> = r2d2::Pool::builder()
-        .build(manager)
-        .expect("Failed to create DB connection pool.");
-
     let app_settings: AppSettings = AppSettings {
         handlebars: web::Data::new(handlebars),
-        pool: pool,
+        pool: setup_database(false),
     };
 
     app_settings
+}
+
+pub fn setup_database(is_test: bool) -> DBPool {
+    dotenv().ok();
+
+    let key: String ;
+
+    if is_test {
+        key = "TEST_DATABASE_URL".to_string();
+    } else {
+        key = "DATABASE_URL".to_string();
+    }
+
+    let database_url: String = env::var(key).expect("DATABASE_URL must be set");
+
+    let manager = ConnectionManager::<SqliteConnection>::new(&database_url);
+
+    r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to create DB connection pool.")
 }

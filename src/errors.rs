@@ -4,6 +4,7 @@ use actix_web::{error, HttpResponse};
 use derive_more::Display;
 use serde_json::json;
 
+#[allow(dead_code)]
 #[derive(Display, Debug)]
 pub enum UserError {
     #[display(fmt = "Invalid input parameter")]
